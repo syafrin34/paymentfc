@@ -1,0 +1,20 @@
+app:
+  port: 8083
+database:
+  host: localhost
+  user: postgres
+  password: postgres
+  name: payment
+  port: 5432
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: 
+kafka:
+  broker: localhost:9093
+  topics:
+    - order.created: order.created
+    - payment.success: payment.success
+xendit:
+  xendit_api_key: ""
+  xendit_webhook_token: ""
