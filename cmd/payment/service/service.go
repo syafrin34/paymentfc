@@ -1,14 +1,15 @@
 package service
 
 import (
-	"toko/ecommerce-msa/PAYMENTFC/cmd/payment/repository"
-	"toko/ecommerce-msa/PAYMENTFC/infrastructure/logger"
+	"context"
+	"paymentfc/cmd/payment/repository"
+	"paymentfc/infrastructure/logger"
 
 	"github.com/sirupsen/logrus"
 )
 
 type PaymentService interface {
-	ProcessPaymentSuccess(orderID int64) error
+	ProcessPaymentSuccess(ctx context.Context, orderID int64) error
 }
 
 type paymentService struct {
@@ -22,9 +23,9 @@ func NewPaymentService(db repository.PaymentDatabase, pb repository.PaymentEvent
 		publisher: pb,
 	}
 }
-func (s *paymentService) ProcessPaymentSuccess(orderID int64) error {
+func (s *paymentService) ProcessPaymentSuccess(ctx context.Context, orderID int64) error {
 	//publish event kafka
-	err := s.publisher.PublishPaymentSuccess(orderID)
+	err := s.publisher.PublishPaymentSuccess(ctx, orderID)
 	if err != nil {
 
 		logger.Logger.WithFields(logrus.Fields{
@@ -34,7 +35,7 @@ func (s *paymentService) ProcessPaymentSuccess(orderID int64) error {
 	}
 
 	//update status db
-	err = s.database.MarkPaid(orderID)
+	err = s.database.MarkPaid(ctx, orderID)
 	if err != nil {
 		logger.Logger.WithFields(logrus.Fields{
 			"order_id": orderID,

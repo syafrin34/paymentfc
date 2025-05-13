@@ -1,0 +1,56 @@
+package handler
+
+import (
+	"net/http"
+	"paymentfc/cmd/payment/usecase"
+	"paymentfc/infrastructure/logger"
+	"paymentfc/models"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+)
+
+type PaymentHandler interface {
+	HandleXenditWebhook(c *gin.Context)
+}
+
+type paymentHandler struct {
+	usecase usecase.PaymentUseCase
+}
+
+func NewPaymentHandler(usecase usecase.PaymentUseCase) PaymentHandler {
+	return &paymentHandler{
+		usecase: usecase,
+	}
+}
+
+func (h *paymentHandler) HandleXenditWebhook(c *gin.Context) {
+	var payload models.XenditWebhookPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		logger.Logger.WithFields(logrus.Fields{
+			"payload": payload,
+		})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":         "invalid payload",
+			"error message": err.Error(),
+		})
+		return
+
+	}
+
+	err := h.usecase.ProcessPaymentWebhook(c.Request.Context(), payload)
+	if err != nil {
+		logger.Logger.WithFields(logrus.Fields{
+			"payload": payload,
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Success",
+	})
+	return
+}

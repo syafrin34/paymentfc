@@ -3,7 +3,7 @@ package resource
 import (
 	"fmt"
 	"log"
-	"toko/ecommerce-msa/PAYMENTFC/config"
+	"paymentfc/config"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

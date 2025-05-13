@@ -1,35 +1,37 @@
 package usecase
 
 import (
+	"context"
+	"paymentfc/cmd/payment/service"
+	"paymentfc/infrastructure/logger"
+	"paymentfc/models"
 	"strconv"
 	"strings"
-	"toko/ecommerce-msa/PAYMENTFC/cmd/payment/service"
-	"toko/ecommerce-msa/PAYMENTFC/infrastructure/logger"
-	"toko/ecommerce-msa/PAYMENTFC/models"
 
 	"github.com/sirupsen/logrus"
 )
 
 type PaymentUseCase interface {
+	ProcessPaymentWebhook(ctx context.Context, payload models.XenditWebhookPayload) error
 }
 
 type paymentUseCase struct {
-	svc service.PaymentService
+	service service.PaymentService
 }
 
 func NewPaymentUseCase(service service.PaymentService) PaymentUseCase {
 	return &paymentUseCase{
-		svc: service,
+		service: service,
 	}
 }
 
-func (uc *paymentUseCase) ProcessPaymentWebhook(payload models.XenditWebhookPayload) error {
+func (uc *paymentUseCase) ProcessPaymentWebhook(ctx context.Context, payload models.XenditWebhookPayload) error {
 	switch payload.Status {
 	case "PAID":
 		// construct external id --> order id
 		orderID := extractOrderID(payload.ExternalID)
 		//connect ke service layer
-		err := uc.svc.ProcessPaymentSuccess(orderID)
+		err := uc.service.ProcessPaymentSuccess(ctx, orderID)
 		if err != nil {
 			logger.Logger.WithFields(logrus.Fields{
 				"status":      payload.Status,
