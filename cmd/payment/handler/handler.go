@@ -12,6 +12,7 @@ import (
 
 type PaymentHandler interface {
 	HandleXenditWebhook(c *gin.Context)
+	HandleCreateInvoice(c *gin.Context)
 }
 
 type paymentHandler struct {
@@ -52,5 +53,18 @@ func (h *paymentHandler) HandleXenditWebhook(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Success",
 	})
+	return
+}
+
+func (h *paymentHandler) HandleCreateInvoice(c *gin.Context) {
+	var payload models.OrderCreatedEvent
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error message": "bad request",
+		})
+		return
+	}
+
 	return
 }
