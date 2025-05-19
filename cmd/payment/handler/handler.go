@@ -16,12 +16,14 @@ type PaymentHandler interface {
 }
 
 type paymentHandler struct {
-	usecase usecase.PaymentUseCase
+	usecase            usecase.PaymentUseCase
+	xenditWebhookToken string
 }
 
-func NewPaymentHandler(usecase usecase.PaymentUseCase) PaymentHandler {
+func NewPaymentHandler(usecase usecase.PaymentUseCase, webhookToken string) PaymentHandler {
 	return &paymentHandler{
-		usecase: usecase,
+		usecase:            usecase,
+		xenditWebhookToken: webhookToken,
 	}
 }
 
@@ -37,6 +39,16 @@ func (h *paymentHandler) HandleXenditWebhook(c *gin.Context) {
 		})
 		return
 
+	}
+
+	// validate web hook token
+	headerWebhookToken := c.GetHeader("x-callback-token")
+	if h.xenditWebhookToken != headerWebhookToken {
+		logger.Logger.WithFields(logrus.Fields{
+			"callbackToken": headerWebhookToken,
+		}).Errorf("Invalid Webhook Token: %s", headerWebhookToken)
+		c.JSON(http.StatusForbidden, gin.H{"error": "invalid webhook token!"})
+		return
 	}
 
 	err := h.usecase.ProcessPaymentWebhook(c.Request.Context(), payload)

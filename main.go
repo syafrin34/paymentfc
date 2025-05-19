@@ -29,7 +29,7 @@ func main() {
 
 	paymentService := service.NewPaymentService(databaseRepository, publisherRepository)
 	paymentUsecase := usecase.NewPaymentUseCase(paymentService)
-	paymentHandler := handler.NewPaymentHandler(paymentUsecase)
+	paymentHandler := handler.NewPaymentHandler(paymentUsecase, cfg.Xendit.XenditWebhook)
 	xenditRepository := repository.NewXenditClient(cfg.Xendit.XenditAPIKey)
 	xenditService := service.NewXenditService(databaseRepository, xenditRepository)
 	xenditUsecase := usecase.NewXenditUseCase(xenditService)
