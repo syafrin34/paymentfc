@@ -18,3 +18,5 @@ kafka:
 xendit:
   xendit_api_key: ""
   xendit_webhook_token: ""
+toggle:
+  disable_create_invoice_directly: true

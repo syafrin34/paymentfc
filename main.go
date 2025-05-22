@@ -34,12 +34,60 @@ func main() {
 	xenditService := service.NewXenditService(databaseRepository, xenditRepository)
 	xenditUsecase := usecase.NewXenditUseCase(xenditService)
 
+	//scheduler
+	scheduler := service.SchedulerService{
+		Database:       databaseRepository,
+		Xendit:         xenditRepository,
+		Publisher:      publisherRepository,
+		PaymentService: paymentService,
+	}
+	scheduler.StartCheckPendingInvoices()
+	scheduler.StartProcessPendingPaymentRequests()
+
 	// kafka consumer
+	// potential less efficient  --> traffict gede
 	kafka.StartOrderConsumer(cfg.Kafka.Broker, cfg.Kafka.KafkaTopics[constant.KafkaTopicOrderCreated], func(event models.OrderCreatedEvent) {
-		if err := xenditUsecase.CreateInvoice(context.Background(), event); err != nil {
-			logger.Logger.Printf("Failed Handling order created event: ", err.Error())
+
+		if cfg.Toggle.DisableCreateInvoiceDirectly {
+			err := paymentUsecase.ProcessPaymentRequests(context.Background(), event)
+			if err != nil {
+				logger.Logger.Println("Enabled Handle Order Created Event: ", err.Error())
+			}
+
+		} else {
+			err := xenditUsecase.CreateInvoice(context.Background(), event)
+			if err != nil {
+				logger.Logger.Println("Failed Handling order created event: ", err.Error())
+			}
+
 		}
+
 	})
+
+	// current condition
+	/*
+		- user checkout order
+		- order execute checkout --> publish event order.created
+		- payment service akan memproses create invoice
+	*/
+
+	// new condition
+	/*
+		- user checkout order
+		- order execute event order.created
+		- payment service akan simpan event yang dari order.created
+		- payment akan menyediakan backgroud process utk create invoice per batch
+	*/
+
+	// cons: - data tidak execute secara realtime
+	// pertimbangan : transactional especially payment process --> harus lebih consistency dan stability
+	// pro:
+	/*
+		sample scenario:
+			-xendit team informaed there will be maintenance for 5 minutes (12:00 - 12:05)
+			- kita bisa hold execute payment requests sampai xendit stable
+			- data dari order service  (order.created) tidak menumpuk
+	*/
 
 	port := cfg.App.Port
 	router := gin.Default()

@@ -53,7 +53,7 @@ func (s *xenditService) CreateInvoice(ctx context.Context, param models.OrderCre
 		UserID:     param.UserID,
 		ExternalID: externalID,
 		Amount:     param.TotalAmount,
-		Status:     "PENDING",
+		Status:     "PENDING", // sweeping status "PENDING"
 		CreateTime: time.Now(),
 	}
 

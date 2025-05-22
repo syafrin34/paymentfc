@@ -9,10 +9,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	maxRetryPublish = 5
+)
+
 type PaymentService interface {
 	ProcessPaymentSuccess(ctx context.Context, orderID int64) error
 	CheckPaymentAmountByOrderID(ctx context.Context, orderID int64) (float64, error)
 	SavePaymentAnomaly(ctx context.Context, param models.PaymentAnomaly) error
+	SavePaymentRequests(ctx context.Context, param models.PaymentRequests) error
 }
 
 type paymentService struct {
@@ -55,6 +60,8 @@ func (s *paymentService) ProcessPaymentSuccess(ctx context.Context, orderID int6
 		return nil
 	}
 
+	// implement retry mechanism
+
 	//publish event kafka
 	err = s.publisher.PublishPaymentSuccess(ctx, orderID)
 	if err != nil {
@@ -81,4 +88,27 @@ func (s *paymentService) SavePaymentAnomaly(ctx context.Context, param models.Pa
 		return err
 	}
 	return nil
+}
+func (s *paymentService) SavePaymentRequests(ctx context.Context, param models.PaymentRequests) error {
+	err := s.database.SavePaymentRequests(ctx, param)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func retryPublishPayment(max int, fn func() error) error {
+	var err error
+	for i := 0; i <= max; i++ {
+		err = fn()
+		if err == nil {
+			return nil
+		}
+		//publis event
+		//failed -->retry
+		//set jeda (2)
+		//failed --> retry
+		//wait := time.Duration(math.Pow(2, float64(i)) * time.Second
+
+	}
+	return err
 }
