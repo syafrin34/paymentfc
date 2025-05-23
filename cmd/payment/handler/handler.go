@@ -5,6 +5,7 @@ import (
 	"paymentfc/cmd/payment/usecase"
 	"paymentfc/infrastructure/logger"
 	"paymentfc/models"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -13,6 +14,7 @@ import (
 type PaymentHandler interface {
 	HandleXenditWebhook(c *gin.Context)
 	HandleCreateInvoice(c *gin.Context)
+	HandlerDownloadPDFInvoice(c *gin.Context)
 }
 
 type paymentHandler struct {
@@ -79,4 +81,21 @@ func (h *paymentHandler) HandleCreateInvoice(c *gin.Context) {
 	}
 
 	return
+}
+func (h *paymentHandler) HandlerDownloadPDFInvoice(c *gin.Context) {
+	orderIDStr := c.Param("order_id")
+	orderID, _ := strconv.ParseInt(orderIDStr, 10, 64)
+
+	filePath, err := h.usecase.DownloadPDFInvoice(c.Request.Context(), orderID)
+	if err != nil {
+		logger.Logger.WithFields(logrus.Fields{
+			"order_id": orderID,
+		}).WithError(err).Errorf("h.usecase.DownloadPdfInvoice() got error: %v", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_message": err.Error,
+		})
+		return
+
+	}
+	c.FileAttachment(filePath, filePath)
 }

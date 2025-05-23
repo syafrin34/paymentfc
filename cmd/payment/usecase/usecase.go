@@ -8,6 +8,7 @@ import (
 	"paymentfc/infrastructure/constant"
 	"paymentfc/infrastructure/logger"
 	"paymentfc/models"
+	"paymentfc/pdf"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ import (
 type PaymentUseCase interface {
 	ProcessPaymentWebhook(ctx context.Context, payload models.XenditWebhookPayload) error
 	ProcessPaymentRequests(ctx context.Context, payload models.OrderCreatedEvent) error
+	DownloadPDFInvoice(ctx context.Context, orderID int64) (string, error)
 }
 
 type paymentUseCase struct {
@@ -115,4 +117,16 @@ func extractOrderID(ExternalID string) int64 {
 	idStr := strings.Trim(ExternalID, "order-")
 	id, _ := strconv.ParseInt(idStr, 10, 64)
 	return id
+}
+func (uc *paymentUseCase) DownloadPDFInvoice(ctx context.Context, orderID int64) (string, error) {
+	paymentDetail, err := uc.service.GetPaymentInfoByOrderID(ctx, orderID)
+	if err != nil {
+		return "", err
+	}
+	filePath := fmt.Sprintf("/fcproject/invoice_%d", orderID)
+	err = pdf.GenerateInvoicePDF(paymentDetail, filePath)
+	if err != nil {
+		return "", err
+	}
+	return filePath, nil
 }

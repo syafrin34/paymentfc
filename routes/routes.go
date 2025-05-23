@@ -11,5 +11,6 @@ func SetupRoutes(router *gin.Engine, paymentHandler handler.PaymentHandler) {
 	router.Use(middleware.RequestLogger())
 
 	router.POST("/v1/paymnet/webhook", paymentHandler.HandleXenditWebhook)
+	router.GET("v1/invoice/:order_id/pdf", paymentHandler.HandlerDownloadPDFInvoice)
 
 }

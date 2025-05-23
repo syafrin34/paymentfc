@@ -18,6 +18,7 @@ type PaymentService interface {
 	CheckPaymentAmountByOrderID(ctx context.Context, orderID int64) (float64, error)
 	SavePaymentAnomaly(ctx context.Context, param models.PaymentAnomaly) error
 	SavePaymentRequests(ctx context.Context, param models.PaymentRequests) error
+	GetPaymentInfoByOrderID(ctx context.Context, orderID int64) (models.Payment, error)
 }
 
 type paymentService struct {
@@ -111,4 +112,11 @@ func retryPublishPayment(max int, fn func() error) error {
 
 	}
 	return err
+}
+func (s *paymentService) GetPaymentInfoByOrderID(ctx context.Context, orderID int64) (models.Payment, error) {
+	paymentInfo, err := s.database.GetPaymentInfoByOrderID(ctx, orderID)
+	if err != nil {
+		return models.Payment{}, err
+	}
+	return paymentInfo, nil
 }
