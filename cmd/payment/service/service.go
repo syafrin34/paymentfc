@@ -73,14 +73,14 @@ func (s *paymentService) ProcessPaymentSuccess(ctx context.Context, orderID int6
 	err = retryPublishPayment(maxRetryPublish, func() error {
 		errLogAudit := s.database.InsertAuditLog(ctx, models.PaymentAuditLog{
 			OrderID:    orderID,
-			Event:      "Publish Payment Success",
+			Event:      "PublishPaymentSuccess",
 			Actor:      "payment",
 			CreateTime: time.Now(),
 		})
 		if errLogAudit != nil {
 			logger.Logger.WithFields(logrus.Fields{
 				"order_id": orderID,
-				"event":    "Publish Payment Success",
+				"event":    "PublishPaymentSuccess",
 				"actor":    "payment",
 			}).WithError(errLogAudit).Errorf("s.database.InsertAuditLog() got error: %v", errLogAudit)
 		}
@@ -117,6 +117,21 @@ func (s *paymentService) ProcessPaymentSuccess(ctx context.Context, orderID int6
 			"order_id": orderID,
 		}).Errorf("s.database.MarkPaid got error")
 		return err
+	} else {
+		errLogAudit := s.database.InsertAuditLog(ctx, models.PaymentAuditLog{
+			OrderID:    orderID,
+			Event:      "MarkPaid",
+			Actor:      "payment",
+			CreateTime: time.Now(),
+		})
+		if errLogAudit != nil {
+			logger.Logger.WithFields(logrus.Fields{
+				"order_id": orderID,
+				"event":    "MarkPaid",
+				"actor":    "payment",
+			}).WithError(errLogAudit).Errorf("s.database.InsertAuditLog() got error: %v", errLogAudit)
+		}
+
 	}
 	return nil
 }
