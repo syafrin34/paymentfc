@@ -29,9 +29,6 @@ func (s *SchedulerService) StartProcessPendingPaymentRequests() {
 				continue
 			}
 
-			// handle failed payment requests
-			// 1. query get failed payment request
-
 			// 2. update status menjadi pending
 
 			// looping list of pending payment requests
@@ -62,7 +59,7 @@ func (s *SchedulerService) StartProcessPendingPaymentRequests() {
 				})
 				if err != nil {
 					log.Printf("[req id: %d] s.Xendit.CreateInvoice got error: %v", paymentRequest.ID, err.Error())
-					errSaveFailedPaymentRequest := s.Database.UpdateFailedPaymentSuccess(ctx, paymentRequest.ID, err.Error())
+					errSaveFailedPaymentRequest := s.Database.UpdateFailedPaymentRequests(ctx, paymentRequest.ID, err.Error())
 					if errSaveFailedPaymentRequest != nil {
 						log.Printf("[req id: %d] s.Database.UpdateFailedPaymentSuccess() got error: %v", paymentRequest.ID, errSaveFailedPaymentRequest.Error())
 					}
@@ -120,4 +117,36 @@ func (s *SchedulerService) StartCheckPendingInvoices() {
 			//process update webhook
 		}
 	}()
+}
+
+func (s *SchedulerService) StartProcessFailedPaymentRequests() {
+	// handle failed payment requests
+	// 1. query get failed payment request
+	go func(ctx context.Context) {
+		for {
+			// get list of failed payment request from db
+			var paymentRequests []models.PaymentRequests
+			err := s.Database.GetFailedPaymentRequests(ctx, &paymentRequests)
+			if err != nil {
+				log.Println("error get failer payment requests! error: ", err.Error())
+				time.Sleep(10 * time.Second)
+				continue
+			}
+			for _, paymentRequest := range paymentRequests {
+				// update status menjadi pending
+				err := s.Database.UpdatePendingPaymentRequests(ctx, paymentRequest.ID)
+				if err != nil {
+					log.Println("s.Database.UpdatePendingPaymentRequests() got error: ", err.Error())
+					// menambah retry count
+					errUpdateStatus := s.Database.UpdateFailedPaymentRequests(ctx, paymentRequest.ID, err.Error())
+					if errUpdateStatus != nil {
+						log.Println("s.Database.UpdateFailedPaymentRequests: got error: ", err.Error())
+					}
+					continue
+				}
+
+			}
+			time.Sleep(1 * time.Minute)
+		}
+	}(context.Background())
 }

@@ -19,7 +19,7 @@ type PaymentDatabase interface {
 	GetPendingInvoices(ctx context.Context) ([]models.Payment, error)
 	SavePaymentRequests(ctx context.Context, param models.PaymentRequests) error
 	UpdateSuccessPaymentRequests(ctx context.Context, paymentRequestID int64) error
-	UpdateFailedPaymentSuccess(ctx context.Context, paymentRequestID int64, notes string) error
+	UpdateFailedPaymentRequests(ctx context.Context, paymentRequestID int64, notes string) error
 	GetPendingPaymentRequests(ctx context.Context, paymentRequests *[]models.PaymentRequests) error
 	GetFailedPaymentRequests(ctx context.Context, paymentRequests *[]models.PaymentRequests) error
 	UpdatePendingPaymentRequests(ctx context.Context, paymentRequestID int64) error
@@ -142,7 +142,7 @@ func (r *paymentDatabase) UpdateSuccessPaymentRequests(ctx context.Context, paym
 	return nil
 }
 
-func (r *paymentDatabase) UpdateFailedPaymentSuccess(ctx context.Context, paymentRequestID int64, notes string) error {
+func (r *paymentDatabase) UpdateFailedPaymentRequests(ctx context.Context, paymentRequestID int64, notes string) error {
 	err := r.DB.Table("payment_requests").WithContext(ctx).Where("id=?", paymentRequestID).Updates(map[string]interface{}{
 		"status":      "FAILED",
 		"notes":       notes,

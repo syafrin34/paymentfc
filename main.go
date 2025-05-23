@@ -43,6 +43,7 @@ func main() {
 	}
 	scheduler.StartCheckPendingInvoices()
 	scheduler.StartProcessPendingPaymentRequests()
+	scheduler.StartProcessFailedPaymentRequests()
 
 	// kafka consumer
 	// potential less efficient  --> traffict gede
