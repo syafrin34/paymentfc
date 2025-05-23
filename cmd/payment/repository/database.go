@@ -24,6 +24,8 @@ type PaymentDatabase interface {
 	GetFailedPaymentRequests(ctx context.Context, paymentRequests *[]models.PaymentRequests) error
 	UpdatePendingPaymentRequests(ctx context.Context, paymentRequestID int64) error
 	GetPaymentInfoByOrderID(ctx context.Context, orderID int64) (models.Payment, error)
+	GetExpiredPendingPayments(ctx context.Context) ([]models.Payment, error)
+	MarkExpired(ctx context.Context, paymentID int64) error
 }
 
 type paymentDatabase struct {
@@ -174,4 +176,25 @@ func (r *paymentDatabase) GetPaymentInfoByOrderID(ctx context.Context, orderID i
 		return models.Payment{}, err
 	}
 	return result, nil
+}
+func (r *paymentDatabase) GetExpiredPendingPayments(ctx context.Context) ([]models.Payment, error) {
+	var result []models.Payment
+	err := r.DB.Table("payments").WithContext(ctx).Where("status = ? and expired_time <= ?", "PENDING", time.Now()).
+		Find(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (r *paymentDatabase) MarkExpired(ctx context.Context, paymentID int64) error {
+	err := r.DB.Table("payments").WithContext(ctx).Model(&models.Payment{}).Where("id = ?", paymentID).
+		Updates(map[string]interface{}{
+			"status":      "EXPIRED",
+			"update_time": time.Now(),
+		}).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }

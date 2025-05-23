@@ -16,6 +16,29 @@ type SchedulerService struct {
 	PaymentService PaymentService
 }
 
+func (s *SchedulerService) StartSweepingExpiredPendingPayments() {
+	go func(ctx context.Context) {
+		for {
+			log.Println("Scheduler StartSweepingExpiredPendingPayments is running....")
+			expiredPayments, err := s.Database.GetExpiredPendingPayments(ctx)
+			if err != nil {
+				log.Println("Failed get expired pending paymnets, err: ", err.Error())
+				time.Sleep(5 * time.Minute)
+				continue
+			}
+			for _, expiredPayment := range expiredPayments {
+				// mark expired
+				err = s.Database.MarkExpired(ctx, expiredPayment.ID)
+				if err != nil {
+					log.Printf("[payment id : %d] Failed update expired, err: %s", expiredPayment.ID, err.Error())
+				}
+			}
+			time.Sleep(10 * time.Minute)
+		}
+
+	}(context.Background())
+}
+
 func (s *SchedulerService) StartProcessPendingPaymentRequests() {
 	go func(ctx context.Context) {
 		for {
@@ -51,7 +74,7 @@ func (s *SchedulerService) StartProcessPendingPaymentRequests() {
 					}
 					continue
 				}
-				_, err = s.Xendit.CreateInvoice(ctx, models.XenditInvoiceRequest{
+				xenditInvoiceDetail, err := s.Xendit.CreateInvoice(ctx, models.XenditInvoiceRequest{
 					ExternalID:  externalID,
 					Amount:      paymentRequest.Amount,
 					Description: fmt.Sprintf("[FC] Pembayaran Order %d", paymentRequest.OrderID),
@@ -66,14 +89,15 @@ func (s *SchedulerService) StartProcessPendingPaymentRequests() {
 					continue
 				}
 
-				//sav data to table payment
+				//save data to table payment
 				err = s.Database.SavePayment(ctx, models.Payment{
-					OrderID:    paymentRequest.OrderID,
-					UserID:     paymentRequest.UserID,
-					Amount:     paymentRequest.Amount,
-					ExternalID: externalID,
-					Status:     "PENDING",
-					CreateTime: time.Now(),
+					OrderID:     paymentRequest.OrderID,
+					UserID:      paymentRequest.UserID,
+					Amount:      paymentRequest.Amount,
+					ExternalID:  externalID,
+					Status:      "PENDING",
+					CreateTime:  time.Now(),
+					ExpiredTime: xenditInvoiceDetail.ExpiryDate,
 				})
 				if err != nil {
 					// to do : need to handle
