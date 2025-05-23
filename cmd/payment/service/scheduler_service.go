@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"paymentfc/cmd/payment/repository"
+	"paymentfc/infrastructure/logger"
 	"paymentfc/models"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type SchedulerService struct {
@@ -74,12 +77,34 @@ func (s *SchedulerService) StartProcessPendingPaymentRequests() {
 					}
 					continue
 				}
-				xenditInvoiceDetail, err := s.Xendit.CreateInvoice(ctx, models.XenditInvoiceRequest{
+				xenditInvoiceRequestParam := models.XenditInvoiceRequest{
 					ExternalID:  externalID,
 					Amount:      paymentRequest.Amount,
 					Description: fmt.Sprintf("[FC] Pembayaran Order %d", paymentRequest.OrderID),
 					PayerEmail:  fmt.Sprintf("user%d@test.com", paymentRequest.UserID), // to do need update
-				})
+				}
+
+				xenditInvoiceDetail, err := s.Xendit.CreateInvoice(ctx, xenditInvoiceRequestParam)
+
+				// get audit log by order id (order by create time)
+				// audit log akan munculin semua action /event di order id tersebut
+				paymentAuditLogParam := models.PaymentAuditLog{
+					OrderID:    paymentInfo.OrderID,
+					UserID:     paymentInfo.UserID,
+					PaymentID:  paymentInfo.ID,
+					ExternalID: externalID,
+					Event:      "CreateInvoice",
+					Actor:      "xendit",
+					CreateTime: time.Now(),
+				}
+				errLogAudit := s.Database.InsertAuditLog(ctx, paymentAuditLogParam)
+
+				if errLogAudit != nil {
+					logger.Logger.WithFields(logrus.Fields{
+						"auditlogprama": paymentAuditLogParam,
+					}).WithError(errLogAudit).Errorf("s.Database.InsertAuditLog() got error: %v", errLogAudit)
+				}
+
 				if err != nil {
 					log.Printf("[req id: %d] s.Xendit.CreateInvoice got error: %v", paymentRequest.ID, err.Error())
 					errSaveFailedPaymentRequest := s.Database.UpdateFailedPaymentRequests(ctx, paymentRequest.ID, err.Error())

@@ -16,6 +16,7 @@ type PaymentDatabase interface {
 	SavePayment(ctx context.Context, param models.Payment) error
 	IsAlreadyPaid(ctx context.Context, orderID int64) (bool, error)
 	SavePaymentAnomaly(ctx context.Context, param models.PaymentAnomaly) error
+	SaveFailedPublishEvent(ctx context.Context, param models.FailedEvents) error
 	GetPendingInvoices(ctx context.Context) ([]models.Payment, error)
 	SavePaymentRequests(ctx context.Context, param models.PaymentRequests) error
 	UpdateSuccessPaymentRequests(ctx context.Context, paymentRequestID int64) error
@@ -26,6 +27,7 @@ type PaymentDatabase interface {
 	GetPaymentInfoByOrderID(ctx context.Context, orderID int64) (models.Payment, error)
 	GetExpiredPendingPayments(ctx context.Context) ([]models.Payment, error)
 	MarkExpired(ctx context.Context, paymentID int64) error
+	InsertAuditLog(ctx context.Context, param models.PaymentAuditLog) error
 }
 
 type paymentDatabase struct {
@@ -194,6 +196,25 @@ func (r *paymentDatabase) MarkExpired(ctx context.Context, paymentID int64) erro
 			"update_time": time.Now(),
 		}).Error
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *paymentDatabase) InsertAuditLog(ctx context.Context, param models.PaymentAuditLog) error {
+	err := r.DB.Table("payment_audit_logs").WithContext(ctx).Create(param).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *paymentDatabase) SaveFailedPublishEvent(ctx context.Context, param models.FailedEvents) error {
+	err := r.DB.Table("failed_events").WithContext(ctx).Create(param).Error
+	if err != nil {
+		logger.Logger.WithFields(logrus.Fields{
+			"param": param,
+		}).WithError(err)
 		return err
 	}
 	return nil

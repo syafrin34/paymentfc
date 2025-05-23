@@ -2,7 +2,12 @@ package service
 
 import (
 	"context"
+	"math"
+	"time"
+
+	//"go/constant"
 	"paymentfc/cmd/payment/repository"
+	"paymentfc/infrastructure/constant"
 	"paymentfc/infrastructure/logger"
 	"paymentfc/models"
 
@@ -64,9 +69,41 @@ func (s *paymentService) ProcessPaymentSuccess(ctx context.Context, orderID int6
 	// implement retry mechanism
 
 	//publish event kafka
-	err = s.publisher.PublishPaymentSuccess(ctx, orderID)
+	//retry until  max retry publish
+	err = retryPublishPayment(maxRetryPublish, func() error {
+		errLogAudit := s.database.InsertAuditLog(ctx, models.PaymentAuditLog{
+			OrderID:    orderID,
+			Event:      "Publish Payment Success",
+			Actor:      "payment",
+			CreateTime: time.Now(),
+		})
+		if errLogAudit != nil {
+			logger.Logger.WithFields(logrus.Fields{
+				"order_id": orderID,
+				"event":    "Publish Payment Success",
+				"actor":    "payment",
+			}).WithError(errLogAudit).Errorf("s.database.InsertAuditLog() got error: %v", errLogAudit)
+		}
+		return s.publisher.PublishPaymentSuccess(ctx, orderID)
+	})
+	//err = s.publisher.PublishPaymentSuccess(ctx, orderID)
 	if err != nil {
-
+		// store data to DB --> failed_events
+		failedEventsParam := models.FailedEvents{
+			OrderID:    orderID,
+			FailedType: constant.FailedPublishEventPaymentSuccess,
+			Status:     constant.FaildePublishEventNeedToCheck,
+			Notes:      err.Error(),
+			CreateTime: time.Now(),
+		}
+		// dead letter table
+		errSaveFailedPublish := s.database.SaveFailedPublishEvent(ctx, failedEventsParam)
+		if errSaveFailedPublish != nil {
+			logger.Logger.WithFields(logrus.Fields{
+				"failedEventsParam": failedEventsParam,
+			}).WithError(errSaveFailedPublish)
+			return errSaveFailedPublish
+		}
 		logger.Logger.WithFields(logrus.Fields{
 			"order_id": orderID,
 		}).Errorf("s.publisher.PublishPaymentSuccess got error: %v", err)
@@ -108,7 +145,9 @@ func retryPublishPayment(max int, fn func() error) error {
 		//failed -->retry
 		//set jeda (2)
 		//failed --> retry
-		//wait := time.Duration(math.Pow(2, float64(i)) * time.Second
+		wait := time.Duration(math.Pow(2, float64(i))) * time.Second
+		logger.Logger.Printf("Retry: %d, Error: %s. retrying in %d seconds...", i+1, err, wait)
+		time.Sleep(wait)
 
 	}
 	return err
