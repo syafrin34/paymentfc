@@ -3,20 +3,27 @@ app:
 database:
   host: localhost
   user: postgres
-  password: postgres
+  # password: postgres
   name: paymentdb
   port: 5432
 redis:
   host: 127.0.0.1
   port: 6379
-  password: 
+  # password: 
+# secret:
+#   jwtsecret: "secret"
 kafka:
   broker: localhost:9093
   topics:
     - order.created: order.created
     - payment.success: payment.success
-xendit:
-  xendit_api_key: ""
-  xendit_webhook_token: ""
+# xendit:
+#   xendit_api_key: "secret_api_key"
+#   xendit_webhook_token: "webhook_token"
 toggle:
   disable_create_invoice_directly: true
+
+vault:
+  host: "http://localhost:8200"
+  token: fcproject
+  path: "secret/data/app"

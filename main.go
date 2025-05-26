@@ -23,6 +23,7 @@ import (
 func main() {
 
 	cfg := config.LoadConfig()
+	cfg = config.LoadSecretConfig(cfg)
 	//redis := resource.InitRedis(&cfg)
 	db := resource.InitDB(&cfg)
 	kafkaWriter := kafka.NewWriter(cfg.Kafka.Broker, cfg.Kafka.Topics[constant.KafkaTopicPaymentSuccess])
@@ -33,16 +34,16 @@ func main() {
 	grpcUserClient := grpc.NewUserClient()
 	userInfo, err := grpcUserClient.GetUserInfoByUserID(context.Background(), 10)
 	if err != nil {
-		logger.Logger.Fatalf("error get user info using grpc", err.Error())
+		logger.Logger.Fatalf("error get user info using grpc: %v", err.Error())
 	}
-	tempDebug39, _ := json.Marshal(userInfo)
-	fmt.Printf("\n==== DEBUG main.go - line 39 ======\n\n%s\n\n========\n\n\n", string(tempDebug39))
+	tempDebug35, _ := json.Marshal(userInfo)
+	fmt.Printf("\n==== DEBUG main.go - line 35 ======\n\n%s\n\n========\n\n\n", string(tempDebug35))
 	databaseRepository := repository.NewPaymentDatabase(db)
 	publisherRepository := repository.NewKafkaPublisher(kafkaWriter)
 
 	paymentService := service.NewPaymentService(databaseRepository, publisherRepository)
 	paymentUsecase := usecase.NewPaymentUseCase(paymentService)
-	paymentHandler := handler.NewPaymentHandler(paymentUsecase, cfg.Xendit.XenditWebhook)
+	paymentHandler := handler.NewPaymentHandler(paymentUsecase, cfg.Xendit.XenditWebhookToken)
 	xenditRepository := repository.NewXenditClient(cfg.Xendit.XenditAPIKey)
 	xenditService := service.NewXenditService(*grpcUserClient, databaseRepository, xenditRepository)
 	xenditUsecase := usecase.NewXenditUseCase(xenditService)
