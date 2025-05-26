@@ -6,7 +6,7 @@ type Config struct {
 	Redis    RedisConfig    `yaml:"redis" validate:"required"`
 	Secret   SecretConfig   `yaml:"secret" validate:"required"`
 	Kafka    KafkaConfig    `yaml:"kafka" validate:"required"`
-	Xendit   XenditConfig   `yaml:"kafka" validate:"required"`
+	Xendit   XenditConfig   `yaml:"xendit" validate:"required"`
 	Toggle   ToggleConfig   `yaml:"toggle" validate:"required"`
 }
 type SecretConfig struct {
@@ -30,8 +30,8 @@ type RedisConfig struct {
 	Password string `yaml:"password" validate:"required"`
 }
 type KafkaConfig struct {
-	Broker      string            `yaml:"broker" validate:"required"`
-	KafkaTopics map[string]string `yaml:"topics" validate:"required"`
+	Broker string            `yaml:"broker" validate:"required"`
+	Topics map[string]string `yaml:"topics" validate:"required"`
 }
 
 type XenditConfig struct {

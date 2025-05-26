@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"paymentfc/cmd/payment/repository"
+	"paymentfc/grpc"
 	"paymentfc/infrastructure/logger"
 	"paymentfc/models"
 	"time"
@@ -13,6 +14,7 @@ import (
 )
 
 type SchedulerService struct {
+	UserClient     grpc.UserClient
 	Database       repository.PaymentDatabase
 	Xendit         repository.XenditClient
 	Publisher      repository.PaymentEventPublisher
@@ -77,11 +79,22 @@ func (s *SchedulerService) StartProcessPendingPaymentRequests() {
 					}
 					continue
 				}
+
+				// get user info by grpc
+				userInfo, err := s.UserClient.GetUserInfoByUserID(ctx, paymentInfo.UserID)
+				if err != nil {
+					logger.Logger.WithFields(logrus.Fields{
+						"user_id":    paymentInfo.UserID,
+						"payment_id": paymentInfo.ID,
+					}).WithError(err).Errorf("[req id : %d] s.UserClient.GetUserInfoByUserID() got error: %v", paymentInfo.ID, err)
+					continue
+				}
+				userEmail := userInfo.Email
 				xenditInvoiceRequestParam := models.XenditInvoiceRequest{
 					ExternalID:  externalID,
 					Amount:      paymentRequest.Amount,
 					Description: fmt.Sprintf("[FC] Pembayaran Order %d", paymentRequest.OrderID),
-					PayerEmail:  fmt.Sprintf("user%d@test.com", paymentRequest.UserID), // to do need update
+					PayerEmail:  userEmail, // to do need update
 				}
 
 				xenditInvoiceDetail, err := s.Xendit.CreateInvoice(ctx, xenditInvoiceRequestParam)

@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"paymentfc/cmd/payment/handler"
 	"paymentfc/cmd/payment/repository"
 	"paymentfc/cmd/payment/resource"
 	"paymentfc/cmd/payment/service"
 	"paymentfc/cmd/payment/usecase"
 	"paymentfc/config"
+	"paymentfc/grpc"
 	"paymentfc/infrastructure/constant"
 	"paymentfc/infrastructure/logger"
 	"paymentfc/kafka"
@@ -18,12 +21,22 @@ import (
 )
 
 func main() {
+
 	cfg := config.LoadConfig()
 	//redis := resource.InitRedis(&cfg)
 	db := resource.InitDB(&cfg)
-	kafkaWriter := kafka.NewWriter(cfg.Kafka.Broker, cfg.Kafka.KafkaTopics[constant.KafkaTopicPaymentSuccess])
+	kafkaWriter := kafka.NewWriter(cfg.Kafka.Broker, cfg.Kafka.Topics[constant.KafkaTopicPaymentSuccess])
+	fmt.Printf("Kafka Broker: %s\n", cfg.Kafka.Broker)
+	fmt.Printf("Kafka Topics: %#v\n", cfg.Kafka.Topics)
 	logger.SetupLogger()
 
+	grpcUserClient := grpc.NewUserClient()
+	userInfo, err := grpcUserClient.GetUserInfoByUserID(context.Background(), 10)
+	if err != nil {
+		logger.Logger.Fatalf("error get user info using grpc", err.Error())
+	}
+	tempDebug39, _ := json.Marshal(userInfo)
+	fmt.Printf("\n==== DEBUG main.go - line 39 ======\n\n%s\n\n========\n\n\n", string(tempDebug39))
 	databaseRepository := repository.NewPaymentDatabase(db)
 	publisherRepository := repository.NewKafkaPublisher(kafkaWriter)
 
@@ -31,7 +44,7 @@ func main() {
 	paymentUsecase := usecase.NewPaymentUseCase(paymentService)
 	paymentHandler := handler.NewPaymentHandler(paymentUsecase, cfg.Xendit.XenditWebhook)
 	xenditRepository := repository.NewXenditClient(cfg.Xendit.XenditAPIKey)
-	xenditService := service.NewXenditService(databaseRepository, xenditRepository)
+	xenditService := service.NewXenditService(*grpcUserClient, databaseRepository, xenditRepository)
 	xenditUsecase := usecase.NewXenditUseCase(xenditService)
 
 	//scheduler
@@ -45,10 +58,14 @@ func main() {
 	scheduler.StartProcessPendingPaymentRequests()
 	scheduler.StartProcessFailedPaymentRequests()
 	scheduler.StartSweepingExpiredPendingPayments()
+	// REMOVE ME - DEBUG PURPOSE ONLY
+	tempDebug69, _ := json.Marshal(cfg.Kafka)
+	fmt.Printf("\n==== DEBUG main.go - Line: 69 ===== \n\n%s\n\n=====================\n\n\n", string(tempDebug69))
+	// END OF REMOVE ME
 
 	// kafka consumer
 	// potential less efficient  --> traffict gede
-	kafka.StartOrderConsumer(cfg.Kafka.Broker, cfg.Kafka.KafkaTopics[constant.KafkaTopicOrderCreated], func(event models.OrderCreatedEvent) {
+	kafka.StartOrderConsumer(cfg.Kafka.Broker, cfg.Kafka.Topics[constant.KafkaTopicOrderCreated], func(event models.OrderCreatedEvent) {
 
 		if cfg.Toggle.DisableCreateInvoiceDirectly {
 			err := paymentUsecase.ProcessPaymentRequests(context.Background(), event)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"paymentfc/cmd/payment/repository"
+	"paymentfc/grpc"
 	"paymentfc/infrastructure/logger"
 	"paymentfc/models"
 	"time"
@@ -16,25 +17,34 @@ type XenditService interface {
 }
 
 type xenditService struct {
-	database repository.PaymentDatabase
-	xendit   repository.XenditClient
+	userClient grpc.UserClient
+	database   repository.PaymentDatabase
+	xendit     repository.XenditClient
 }
 
-func NewXenditService(database repository.PaymentDatabase, xenditClinet repository.XenditClient) XenditService {
+func NewXenditService(userClient grpc.UserClient, database repository.PaymentDatabase, xenditClinet repository.XenditClient) XenditService {
 	return &xenditService{
-		database: database,
-		xendit:   xenditClinet,
+		userClient: userClient,
+		database:   database,
+		xendit:     xenditClinet,
 	}
 }
 func (s *xenditService) CreateInvoice(ctx context.Context, param models.OrderCreatedEvent) error {
 	//construct external id --> ini kita yang define sendiri
+	// format order-{{ orderID}}
 
+	//get user info using grpc
+	userInfo, err := s.userClient.GetUserInfoByUserID(ctx, param.UserID)
+	if err != nil {
+		return err
+	}
+	userEmail := userInfo.Email
 	externalID := fmt.Sprintf("order-%d", param.OrderID)
 	req := models.XenditInvoiceRequest{
 		ExternalID:  externalID,
 		Amount:      param.TotalAmount,
 		Description: fmt.Sprintf("[FC] Pembayaran Order %d", param.OrderID),
-		PayerEmail:  fmt.Sprintf("user%d@test.com", param.UserID),
+		PayerEmail:  userEmail,
 	}
 
 	xenditInvoiceDetail, err := s.xendit.CreateInvoice(ctx, req)

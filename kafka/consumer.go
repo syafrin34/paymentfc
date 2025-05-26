@@ -10,6 +10,9 @@ import (
 )
 
 func StartOrderConsumer(broker string, topic string, handler func(models.OrderCreatedEvent)) {
+	if topic == "" {
+		log.Fatal("Kafka topic is empty! Please specify a valid topic name.")
+	}
 	consumer := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{broker},
 		Topic:   topic,
