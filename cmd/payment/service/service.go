@@ -18,6 +18,8 @@ const (
 	maxRetryPublish = 5
 )
 
+// mocke gen  -source=cmd/payment/service/service.go -destination=cmd/test_mocks/payment_service_mock.go -package=mocks
+
 type PaymentService interface {
 	ProcessPaymentSuccess(ctx context.Context, orderID int64) error
 	CheckPaymentAmountByOrderID(ctx context.Context, orderID int64) (float64, error)

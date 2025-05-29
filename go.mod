@@ -4,11 +4,13 @@ go 1.23.4
 
 require (
 	github.com/gin-gonic/gin v1.10.0
+	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/redis/go-redis/v9 v9.8.0
 	github.com/segmentio/kafka-go v0.4.47
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.20.1
+	github.com/stretchr/testify v1.10.0
 	google.golang.org/grpc v1.72.1
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.26.1
@@ -16,8 +18,8 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.4 // indirect
-	github.com/golang/mock v1.6.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -29,6 +31,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
