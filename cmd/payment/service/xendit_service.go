@@ -36,6 +36,10 @@ func (s *xenditService) CreateInvoice(ctx context.Context, param models.OrderCre
 	//get user info using grpc
 	userInfo, err := s.userClient.GetUserInfoByUserID(ctx, param.UserID)
 	if err != nil {
+		logger.Logger.WithFields(logrus.Fields{
+			"user_id":    param.UserID,
+			"error_code": "s.CI001",
+		}).WithError(err).Errorf("s.userClient.GetUserInfoByUserID() got error: %v", err)
 		return err
 	}
 	userEmail := userInfo.Email
@@ -50,8 +54,9 @@ func (s *xenditService) CreateInvoice(ctx context.Context, param models.OrderCre
 	xenditInvoiceDetail, err := s.xendit.CreateInvoice(ctx, req)
 	if err != nil {
 		logger.Logger.WithFields(logrus.Fields{
-			"rquest":  param,
-			"payload": req,
+			"rquest":     param,
+			"payload":    req,
+			"error_code": "s.CI0002",
 		}).Errorf("s.xenditCreateInvoice got error : %v", err)
 		return err
 	}

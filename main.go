@@ -45,7 +45,7 @@ func main() {
 	paymentUsecase := usecase.NewPaymentUseCase(paymentService)
 	paymentHandler := handler.NewPaymentHandler(paymentUsecase, cfg.Xendit.XenditWebhookToken)
 	xenditRepository := repository.NewXenditClient(cfg.Xendit.XenditAPIKey)
-	xenditService := service.NewXenditService(*grpcUserClient, databaseRepository, xenditRepository)
+	xenditService := service.NewXenditService(grpcUserClient, databaseRepository, xenditRepository)
 	xenditUsecase := usecase.NewXenditUseCase(xenditService)
 
 	//scheduler
