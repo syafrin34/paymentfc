@@ -32,6 +32,22 @@ func (s *SchedulerService) StartSweepingExpiredPendingPayments() {
 				continue
 			}
 			for _, expiredPayment := range expiredPayments {
+				// chechk payment status first before uodate
+				paymentInfo, err := s.Database.GetPaymentInfoByOrderID(ctx, expiredPayment.OrderID)
+				if err != nil {
+					logger.Logger.Printf("[payment id: %d] Failed Get Payment Info, err: %s", expiredPayment.ID, err.Error())
+				}
+
+				// STATUS expired, success, failed, --> ignore
+				if paymentInfo.Status == "PENDING" {
+					continue
+				}
+
+				// publish event payment failed
+				err = retryPublishPayment(maxRetryPublish, func() error {
+					return s.Publisher.PublishEventPaymentStatus(ctx, expiredPayment.OrderID, "FAILED", "payment.failed")
+				})
+
 				// mark expired
 				err = s.Database.MarkExpired(ctx, expiredPayment.ID)
 				if err != nil {

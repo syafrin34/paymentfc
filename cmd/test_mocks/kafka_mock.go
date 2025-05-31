@@ -34,6 +34,20 @@ func (m *MockPaymentEventPublisher) EXPECT() *MockPaymentEventPublisherMockRecor
 	return m.recorder
 }
 
+// PublishEventPaymentStatus mocks base method.
+func (m *MockPaymentEventPublisher) PublishEventPaymentStatus(ctx context.Context, orderID int64, status, topic string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PublishEventPaymentStatus", ctx, orderID, status, topic)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PublishEventPaymentStatus indicates an expected call of PublishEventPaymentStatus.
+func (mr *MockPaymentEventPublisherMockRecorder) PublishEventPaymentStatus(ctx, orderID, status, topic interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishEventPaymentStatus", reflect.TypeOf((*MockPaymentEventPublisher)(nil).PublishEventPaymentStatus), ctx, orderID, status, topic)
+}
+
 // PublishPaymentSuccess mocks base method.
 func (m *MockPaymentEventPublisher) PublishPaymentSuccess(ctx context.Context, orderID int64) error {
 	m.ctrl.T.Helper()

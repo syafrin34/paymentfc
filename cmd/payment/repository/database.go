@@ -13,6 +13,7 @@ import (
 type PaymentDatabase interface {
 	CheckPaymentAmountByOrderID(ctx context.Context, orderID int64) (float64, error)
 	MarkPaid(ctx context.Context, orderID int64) error
+	MarkFailed(ctx context.Context, ordeID int64) error
 	SavePayment(ctx context.Context, param models.Payment) error
 	IsAlreadyPaid(ctx context.Context, orderID int64) (bool, error)
 	SavePaymentAnomaly(ctx context.Context, param models.PaymentAnomaly) error
@@ -62,6 +63,19 @@ func (r *paymentDatabase) MarkPaid(ctx context.Context, ordeID int64) error {
 	}
 	return nil
 }
+
+func (r *paymentDatabase) MarkFailed(ctx context.Context, ordeID int64) error {
+	err := r.DB.Model(&models.Payment{}).Table("payments").WithContext(ctx).Where("order_id = ?", ordeID).
+		Updates(map[string]interface{}{
+			"status":      "FAILED",
+			"update_time": time.Now(),
+		}).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *paymentDatabase) IsAlreadyPaid(ctx context.Context, orderID int64) (bool, error) {
 	var result models.Payment
 	err := r.DB.Table("payments").WithContext(ctx).Where("external_id=?", orderID).First(&result).Error

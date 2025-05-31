@@ -166,6 +166,20 @@ func (mr *MockPaymentDatabaseMockRecorder) MarkExpired(ctx, paymentID interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkExpired", reflect.TypeOf((*MockPaymentDatabase)(nil).MarkExpired), ctx, paymentID)
 }
 
+// MarkFailed mocks base method.
+func (m *MockPaymentDatabase) MarkFailed(ctx context.Context, ordeID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkFailed", ctx, ordeID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkFailed indicates an expected call of MarkFailed.
+func (mr *MockPaymentDatabaseMockRecorder) MarkFailed(ctx, ordeID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkFailed", reflect.TypeOf((*MockPaymentDatabase)(nil).MarkFailed), ctx, ordeID)
+}
+
 // MarkPaid mocks base method.
 func (m *MockPaymentDatabase) MarkPaid(ctx context.Context, orderID int64) error {
 	m.ctrl.T.Helper()

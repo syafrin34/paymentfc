@@ -99,7 +99,11 @@ func (uc *paymentUseCase) ProcessPaymentWebhook(ctx context.Context, payload mod
 			return err
 		}
 	case "FAILED":
-
+		orderID := extractOrderID(payload.ExternalID)
+		err := uc.service.ProcessPaymentFailed(ctx, orderID)
+		if err != nil {
+			return err
+		}
 	case "PENDING":
 
 	default:
