@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Payment struct {
 	ID          int64     `json:"id"`
@@ -29,4 +31,8 @@ type PaymentRequests struct {
 type PaymentStatusUpdateEvent struct {
 	OrderID int64  `json:"order_id"`
 	Status  string `json:"status"`
+}
+type FailedPaymentList struct {
+	TotalFailedPayment int `json:"total_failed_payments"`
+	PaymentList        []PaymentRequests
 }

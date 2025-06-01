@@ -13,4 +13,7 @@ func SetupRoutes(router *gin.Engine, paymentHandler handler.PaymentHandler) {
 	router.POST("/v1/paymnet/webhook", paymentHandler.HandleXenditWebhook)
 	router.GET("v1/invoice/:order_id/pdf", paymentHandler.HandlerDownloadPDFInvoice)
 
+	// internal useg
+	router.GET("v1/failed_payments", paymentHandler.HandleFailedPayments)
+
 }

@@ -15,6 +15,7 @@ type PaymentHandler interface {
 	HandleXenditWebhook(c *gin.Context)
 	HandleCreateInvoice(c *gin.Context)
 	HandlerDownloadPDFInvoice(c *gin.Context)
+	HandleFailedPayments(c *gin.Context)
 }
 
 type paymentHandler struct {
@@ -67,7 +68,7 @@ func (h *paymentHandler) HandleXenditWebhook(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Success",
 	})
-	return
+
 }
 
 func (h *paymentHandler) HandleCreateInvoice(c *gin.Context) {
@@ -80,7 +81,6 @@ func (h *paymentHandler) HandleCreateInvoice(c *gin.Context) {
 		return
 	}
 
-	return
 }
 func (h *paymentHandler) HandlerDownloadPDFInvoice(c *gin.Context) {
 	orderIDStr := c.Param("order_id")
@@ -98,4 +98,19 @@ func (h *paymentHandler) HandlerDownloadPDFInvoice(c *gin.Context) {
 
 	}
 	c.FileAttachment(filePath, filePath)
+}
+
+func (h *paymentHandler) HandleFailedPayments(c *gin.Context) {
+	failedPaymenList, err := h.usecase.FailedPaymentList(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_message": err.Error,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": failedPaymenList,
+	})
+
 }

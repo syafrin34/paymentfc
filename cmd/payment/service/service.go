@@ -27,6 +27,7 @@ type PaymentService interface {
 	SavePaymentRequests(ctx context.Context, param models.PaymentRequests) error
 	GetPaymentInfoByOrderID(ctx context.Context, orderID int64) (models.Payment, error)
 	ProcessPaymentFailed(ctx context.Context, orderID int64) error
+	GetFailedPaymentList(ctx context.Context) ([]models.PaymentRequests, error)
 }
 
 type paymentService struct {
@@ -40,7 +41,13 @@ func NewPaymentService(db repository.PaymentDatabase, pb repository.PaymentEvent
 		publisher: pb,
 	}
 }
-
+func (s *paymentService) GetFailedPaymentList(ctx context.Context) ([]models.PaymentRequests, error) {
+	paymentList, err := s.database.GetFailedPaymentList(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return paymentList, nil
+}
 func (s *paymentService) CheckPaymentAmountByOrderID(ctx context.Context, orderID int64) (float64, error) {
 	amount, err := s.database.CheckPaymentAmountByOrderID(ctx, orderID)
 	if err != nil {

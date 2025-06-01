@@ -24,6 +24,7 @@ type PaymentDatabase interface {
 	UpdateFailedPaymentRequests(ctx context.Context, paymentRequestID int64, notes string) error
 	GetPendingPaymentRequests(ctx context.Context, paymentRequests *[]models.PaymentRequests) error
 	GetFailedPaymentRequests(ctx context.Context, paymentRequests *[]models.PaymentRequests) error
+	GetFailedPaymentList(ctx context.Context) ([]models.PaymentRequests, error)
 	UpdatePendingPaymentRequests(ctx context.Context, paymentRequestID int64) error
 	GetPaymentInfoByOrderID(ctx context.Context, orderID int64) (models.Payment, error)
 	GetExpiredPendingPayments(ctx context.Context) ([]models.Payment, error)
@@ -147,6 +148,15 @@ func (r *paymentDatabase) GetFailedPaymentRequests(ctx context.Context, paymentR
 		return err
 	}
 	return nil
+}
+
+func (r *paymentDatabase) GetFailedPaymentList(ctx context.Context) ([]models.PaymentRequests, error) {
+	var paymentList []models.PaymentRequests
+	err := r.DB.Table("payment_requests").WithContext(ctx).Where("status = ? AND retry_count >= ?", "FAILED", 3).Order("create_time ASC").Find(&paymentList).Error
+	if err != nil {
+		return nil, err
+	}
+	return paymentList, nil
 }
 
 func (r *paymentDatabase) UpdateSuccessPaymentRequests(ctx context.Context, paymentRequestID int64) error {

@@ -20,6 +20,7 @@ type PaymentUseCase interface {
 	ProcessPaymentWebhook(ctx context.Context, payload models.XenditWebhookPayload) error
 	ProcessPaymentRequests(ctx context.Context, payload models.OrderCreatedEvent) error
 	DownloadPDFInvoice(ctx context.Context, orderID int64) (string, error)
+	FailedPaymentList(ctx context.Context) (models.FailedPaymentList, error)
 }
 
 type paymentUseCase struct {
@@ -133,4 +134,17 @@ func (uc *paymentUseCase) DownloadPDFInvoice(ctx context.Context, orderID int64)
 		return "", err
 	}
 	return filePath, nil
+}
+
+func (uc *paymentUseCase) FailedPaymentList(ctx context.Context) (models.FailedPaymentList, error) {
+
+	paymentList, err := uc.service.GetFailedPaymentList(ctx)
+	if err != nil {
+		return models.FailedPaymentList{}, err
+	}
+	result := models.FailedPaymentList{
+		TotalFailedPayment: len(paymentList),
+		PaymentList:        paymentList,
+	}
+	return result, nil
 }

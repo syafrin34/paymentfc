@@ -65,6 +65,21 @@ func (mr *MockPaymentDatabaseMockRecorder) GetExpiredPendingPayments(ctx interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExpiredPendingPayments", reflect.TypeOf((*MockPaymentDatabase)(nil).GetExpiredPendingPayments), ctx)
 }
 
+// GetFailedPaymentList mocks base method.
+func (m *MockPaymentDatabase) GetFailedPaymentList(ctx context.Context) ([]models.PaymentRequests, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFailedPaymentList", ctx)
+	ret0, _ := ret[0].([]models.PaymentRequests)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFailedPaymentList indicates an expected call of GetFailedPaymentList.
+func (mr *MockPaymentDatabaseMockRecorder) GetFailedPaymentList(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFailedPaymentList", reflect.TypeOf((*MockPaymentDatabase)(nil).GetFailedPaymentList), ctx)
+}
+
 // GetFailedPaymentRequests mocks base method.
 func (m *MockPaymentDatabase) GetFailedPaymentRequests(ctx context.Context, paymentRequests *[]models.PaymentRequests) error {
 	m.ctrl.T.Helper()
